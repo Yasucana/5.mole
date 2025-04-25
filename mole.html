@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whack-a-Mole</title>
+    <style>
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .hole {
+            width: 100px;
+            height: 100px;
+            background-color: #333;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+        }
+        .mole {
+            width: 80px;
+            height: 80px;
+            background-color: #8B4513; /* Brown color for moles */
+            border-radius: 50%;
+            position: absolute;
+            bottom: 0;
+            left: 10px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        .mole.visible {
+            transform: translateY(0);
+        }
+        .yellow-mole {
+            background-color: yellow;
+        }
+        .score, .timer {
+            text-align: center;
+            font-size: 20px;
+            margin: 10px;
+        }
+        #start-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        .score-board {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            font-size: 20px;
+        }
+        #ne-image {
+            position: absolute;
+            left: 20px;
+            top: 50px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="score-board">High Score: 0</div>
+    <button id="start-button">Start Game</button>
+    <div class="score">Score: 0</div>
+    <div class="timer">Time: 60</div>
+    <div class="game-container">
+        <div class="hole"><div class="mole"></div></div>
+        <div class="hole"><div class="mole"></div></div>
+        <div class="hole"><div class="mole"></div></div>
+        <div class="hole"><div class="mole"></div></div>
+        <div class="hole"><div class="mole"></div></div>
+        <div class="hole"><div class="mole"></div></div>
+        <div class="hole"><div class="mole"></div></div>
+        <div class="hole"><div class="mole"></div></div>
+        <div class="hole"><div class="mole"></div></div>
+    </div>
+    <img id="ne-image" src="ne.png" alt="ne" width="100">
+
+    <script>
+        const moles = document.querySelectorAll('.mole');
+        const scoreDisplay = document.querySelector('.score');
+        const timerDisplay = document.querySelector('.timer');
+        const startButton = document.getElementById('start-button');
+        const scoreBoard = document.querySelector('.score-board');
+        const neImage = document.getElementById('ne-image');
+
+        let score = 0;
+        let highScore = 0;
+        let timeLeft = 60;
+        let timerId;
+        let moleTimerId;
+        let speedTimerId;
+
+        function updateScore() {
+            scoreDisplay.textContent = `Score: ${score}`;
+        }
+
+        function updateHighScore() {
+            scoreBoard.textContent = `High Score: ${highScore}`;
+        }
+
+        function updateTimer() {
+            timerDisplay.textContent = `Time: ${timeLeft}`;
+        }
+
+        function handleClick(event) {
+            const mole = event.target;
+            if (mole.classList.contains('visible')) {
+                if (mole.classList.contains('yellow-mole')) {
+                    score += 3; // Yellow mole is worth 3 points
+                } else {
+                    score += 1; // Regular mole is worth 1 point
+                }
+                updateScore();
+                mole.classList.remove('visible');
+                mole.classList.remove('yellow-mole'); // Remove class on click
+            }
+        }
+
+        function startGame() {
+            startButton.style.display = 'none';
+            neImage.style.display = 'none'; // Hide image at game start
+            score = 0;
+            timeLeft = 60;
+            let moleInterval = 1500; // Initial interval 1500ms
+            updateScore();
+            updateTimer();
+
+            timerId = setInterval(() => {
+                timeLeft--;
+                updateTimer();
+                if (timeLeft <= 0) {
+                    clearInterval(timerId);
+                    clearInterval(moleTimerId);
+                    clearInterval(speedTimerId);
+                    startButton.style.display = 'block';
+                    if (score > highScore) {
+                        highScore = score;
+                        updateHighScore();
+                    } else {
+                        neImage.style.display = 'block'; // Show image if score is lower than high score
+                    }
+                    alert(`Game Over! Your score is ${score}`);
+                }
+            }, 1000);
+
+            moleTimerId = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(moleTimerId);
+                    return;
+                }
+                const numMoles = Math.floor(Math.random() * 3) + 1; // 1 to 3 moles
+                for (let i = 0; i < numMoles; i++) {
+                    const randomMole = moles[Math.floor(Math.random() * moles.length)];
+                    if (!randomMole.classList.contains('visible')) {
+                        if (Math.random() < 0.1) { // 10% chance for yellow mole
+                            randomMole.classList.add('yellow-mole');
+                        } else {
+                            randomMole.classList.remove('yellow-mole'); // Regular mole
+                        }
+                        randomMole.classList.add('visible');
+                        setTimeout(() => {
+                            randomMole.classList.remove('visible');
+                            randomMole.classList.remove('yellow-mole'); // Remove class when disappearing
+                        }, Math.floor(moleInterval * 0.6)); // Display time is 60% of interval
+                    }
+                }
+            }, moleInterval);
+
+            // Increase speed every 10 seconds
+            speedTimerId = setInterval(() => {
+                if (moleInterval > 1250) { // Minimum interval 1250ms (max speed)
+                    moleInterval -= 40; // Decrease by 40ms
+                    clearInterval(moleTimerId);
+                    moleTimerId = setInterval(() => {
+                        if (timeLeft <= 0) {
+                            clearInterval(moleTimerId);
+                            return;
+                        }
+                        const numMoles = Math.floor(Math.random() * 3) + 1;
+                        for (let i = 0; i < numMoles; i++) {
+                            const randomMole = moles[Math.floor(Math.random() * moles.length)];
+                            if (!randomMole.classList.contains('visible')) {
+                                if (Math.random() < 0.1) {
+                                    randomMole.classList.add('yellow-mole');
+                                } else {
+                                    randomMole.classList.remove('yellow-mole');
+                                }
+                                randomMole.classList.add('visible');
+                                setTimeout(() => {
+                                    randomMole.classList.remove('visible');
+                                    randomMole.classList.remove('yellow-mole');
+                                }, Math.floor(moleInterval * 0.6));
+                            }
+                        }
+                    }, moleInterval);
+                }
+            }, 10000); // Every 10 seconds
+        }
+
+        moles.forEach(mole => {
+            mole.addEventListener('click', handleClick);
+        });
+
+        startButton.addEventListener('click', startGame);
+    </script>
+</body>
+</html>
